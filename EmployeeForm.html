@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <?!= getCommonCSS() ?>
+  </head>
+  <body>
+    <div class="container">
+      <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
+      <h2>RRSP Enrollment - Employee Form</h2>
+      <form id="emailForm">
+        <label for="email">Please enter your email:</label>
+        <input type="email" id="email" name="email" required>
+        <button type="submit">Verify Email</button>
+      </form>
+      
+      <form id="rrspForm" style="display: none;">
+        <p id="rrspMatchingPlan"></p>
+        
+        <label for="wantToMatch">Do you want to contribute to RRSP and match employer percentage?</label>
+        <select id="wantToMatch" name="wantToMatch" required>
+          <option value="">Select an option</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+        
+        <div id="contributeMoreSection" style="display: none;">
+          <label for="contributeMore">Do you want to contribute more than the standard matching plan above?</label>
+          <select id="contributeMore" name="contributeMore">
+            <option value="">Select an option</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+          
+          <div id="additionalContribution" style="display: none;">
+            <label for="additionalPercentage">Please enter the percentage that you want to contribute on top of regular matching:</label>
+            <input type="number" id="additionalPercentage" name="additionalPercentage" min="0" max="100" step="0.1">
+          </div>
+        </div>
+        
+        <input type="submit" value="Submit">
+      </form>
+      
+      <div id="result"></div>
+    </div>
+    
+    <script>
+      document.getElementById('emailForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var email = this.email.value;
+        google.script.run.withSuccessHandler(function(rrspMatchingPlan) {
+          if (rrspMatchingPlan) {
+            document.getElementById('rrspMatchingPlan').innerHTML = 'Your RRSP Matching Plan: ' + rrspMatchingPlan + '%';
+            document.getElementById('emailForm').style.display = 'none';
+            document.getElementById('rrspForm').style.display = 'block';
+          } else {
+            document.getElementById('result').innerHTML = 'Error: Email not found or RRSP Matching Plan not set.';
+          }
+        }).getRRSPMatchingPlan(email);
+      });
+      
+      document.getElementById('wantToMatch').addEventListener('change', function() {
+        var contributeMoreSection = document.getElementById('contributeMoreSection');
+        var contributeMore = document.getElementById('contributeMore');
+        var additionalPercentage = document.getElementById('additionalPercentage');
+        
+        if (this.value === 'Yes') {
+          contributeMoreSection.style.display = 'block';
+          contributeMore.required = true;
+        } else {
+          contributeMoreSection.style.display = 'none';
+          contributeMore.required = false;
+          contributeMore.value = '';
+          additionalPercentage.value = '';
+        }
+      });
+      
+      document.getElementById('contributeMore').addEventListener('change', function() {
+        var additionalContribution = document.getElementById('additionalContribution');
+        var additionalPercentage = document.getElementById('additionalPercentage');
+        
+        if (this.value === 'Yes') {
+          additionalContribution.style.display = 'block';
+          additionalPercentage.required = true;
+        } else {
+          additionalContribution.style.display = 'none';
+          additionalPercentage.required = false;
+          additionalPercentage.value = '';
+        }
+      });
+      
+      document.getElementById('rrspForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var wantToMatch = this.wantToMatch.value;
+        var contributeMore = wantToMatch === 'Yes' ? this.contributeMore.value : 'N/A';
+        var additionalPercentage = (wantToMatch === 'Yes' && contributeMore === 'Yes') ? this.additionalPercentage.value : 'N/A';
+        
+        google.script.run.withSuccessHandler(function(result) {
+          document.getElementById('result').innerHTML = result;
+          document.getElementById('rrspForm').style.display = 'none';
+        }).processEmployeeForm({
+          email: document.getElementById('email').value,
+          wantToMatch: wantToMatch,
+          contributeMore: contributeMore,
+          additionalPercentage: additionalPercentage
+        });
+      });
+    </script>
+  </body>
+</html>
