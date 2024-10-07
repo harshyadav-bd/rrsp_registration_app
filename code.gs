@@ -1,39 +1,98 @@
+// Global variables
+const SPREADSHEET_ID = '1OjOsY3xKS63rf1ANOTqJ1zZ72K2WWUmUMPNTwdyGXPk';
+const SHEET_NAME = 'Sheet1';
+
 function doGet(e) {
-  if (e.parameter.page && e.parameter.page === 'form2') {
-    return HtmlService.createHtmlOutputFromFile('Form2.html').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  if (e.parameter.form == 'employee') {
+    return HtmlService.createTemplateFromFile('EmployeeForm')
+      .evaluate()
+      .setTitle('RRSP Enrollment - Employee Form');
   }
-  return HtmlService.createHtmlOutputFromFile('Form1.html').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return HtmlService.createTemplateFromFile('EmployerForm')
+    .evaluate()
+    .setTitle('RRSP Enrollment - Employer Form');
 }
 
-function processForm1(formData) {
-  var sheet = SpreadsheetApp.openById('1OjOsY3xKS63rf1ANOTqJ1zZ72K2WWUmUMPNTwdyGXPk').getSheetByName('Form1');
+function processEmployerForm(formData) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const lastRow = sheet.getLastRow();
   
-  // Check for duplicate entries
-  var lastRow = sheet.getLastRow();
-  var data = sheet.getRange(1, 1, lastRow, 5).getValues();
-  for (var i = 0; i < data.length; i++) {
-    if (data[i][3] === formData.employeeEmail) {
-      return 'This employee has already been enrolled.';
-    }
-  }
+  const agreeToDefaultValue = formData.filledBefore === 'No' ? (formData.agreeToDefault ? 'Yes' : 'No') : 'NULL';
   
-  sheet.appendRow([formData.employerName, formData.employerEmail, formData.employeeName, formData.employeeEmail, formData.rrspEnroll]);
-
-  if (formData.rrspEnroll === 'yes') {
-    var employeeEmail = formData.employeeEmail;
-    if (employeeEmail) {
-      sendEmailToEmployee(employeeEmail);
-    }
-  }
-  return 'Your Form has been submitted! The employee will now recive an email to finalize their enrollment';
+  sheet.getRange(lastRow + 1, 1, 1, 9).setValues([[
+    formData.formFillerEmail,
+    formData.formFillerCompany,
+    formData.filledBefore,
+    formData.rrspMatchingPlan,
+    agreeToDefaultValue,
+    formData.employeeName,
+    formData.employeeEmail,
+    new Date(),
+    'Pending'
+  ]]);
+  
+  sendEmailToEmployee(formData.employeeEmail, formData.rrspMatchingPlan);
+  
+  return 'Form submitted successfully. An email has been sent to the employee.';
 }
 
-function sendEmailToEmployee(email) {
-  var subject = 'Please fill out the RRSP Enrollment Form';
-  var body = HtmlService.createHtmlOutputFromFile('emailTemplate').getContent();
-  var deploymentId = 'AKfycbxpH-7py7VK2_xZ44B6FzkG5FbnqWNu2oAI1alaoOKz8lCRge3v4Xql6Ci06MaaVEcWRQ'; // Replace with your actual deployment ID
-  var url = 'https://script.google.com/macros/s/' + deploymentId + '/exec?page=form2';
-  body = body.replace('{{FORM_URL}}', url);
+function sendEmailToEmployee(email, rrspMatchingPlan) {
+  const subject = 'RRSP Enrollment - Employee Form';
+  const body = `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: 'Roboto', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+          }
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+          }
+          .content {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          }
+          h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+          }
+          .logo {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 200px;
+          }
+          .button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
+            <h2>RRSP Enrollment</h2>
+            <p>Dear Employee,</p>
+            <p>Please complete your RRSP enrollment by filling out the form using the link below.</p>
+            <p>Your RRSP Matching Plan: ${rrspMatchingPlan}%</p>
+            <a href="${ScriptApp.getService().getUrl()}?form=employee" class="button">Complete RRSP Enrollment</a>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
   
   MailApp.sendEmail({
     to: email,
@@ -42,10 +101,129 @@ function sendEmailToEmployee(email) {
   });
 }
 
-function processForm2(formData) {
-  var sheet = SpreadsheetApp.openById('1OjOsY3xKS63rf1ANOTqJ1zZ72K2WWUmUMPNTwdyGXPk').getSheetByName('Form2');
-  sheet.appendRow([formData.employeeName, formData.address, formData.phone, formData.bankDetails]);
-
-  return 'Please finalize your enrollment by going direct to the link below';
+function processEmployeeForm(formData) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  // Find the row with the matching email in column 7 (index 6)
+  const row = data.findIndex(row => row[6] === formData.email);
+  
+  if (row === -1) {
+    return 'Error: Employee email not found.';
+  }
+  
+  // Update columns 10-13 with the new data
+  sheet.getRange(row + 1, 10, 1, 4).setValues([[
+    formData.wantToMatch,
+    formData.contributeMore,
+    formData.additionalPercentage || 'N/A',
+    new Date()
+  ]]);
+  
+  // Update status in column 9
+  sheet.getRange(row + 1, 9).setValue('Completed');
+  
+  return 'Form submitted successfully. Your RRSP enrollment is complete.';
 }
 
+function getRRSPMatchingPlan(email) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  // Assuming employee email is now in column 7 (index 6)
+  const row = data.find(row => row[6] === email);
+  
+  if (!row) {
+    return null;
+  }
+  
+  // RRSP Matching Plan is in column 4 (index 3)
+  return row[3];
+}
+
+function getCommonCSS() {
+  return `
+    <style>
+      body {
+        font-family: 'Roboto', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .logo {
+        display: block;
+        margin: 0 auto 20px;
+        max-width: 200px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #34495e;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      input[type="submit"],
+      button {
+        background-color: #3498db;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      input[type="submit"]:hover,
+      button:hover {
+        background-color: #2980b9;
+      }
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .checkbox-container input {
+        margin-right: 10px;
+      }
+      #result {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+        text-align: center;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+    </style>
+  `;
+}
