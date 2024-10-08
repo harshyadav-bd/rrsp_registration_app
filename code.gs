@@ -17,23 +17,52 @@ function processEmployerForm(formData) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
   const lastRow = sheet.getLastRow();
   
-  const agreeToDefaultValue = formData.filledBefore === 'No' ? (formData.agreeToDefault ? 'Yes' : 'No') : 'NULL';
-  
   sheet.getRange(lastRow + 1, 1, 1, 9).setValues([[
     formData.formFillerEmail,
     formData.formFillerCompany,
     formData.filledBefore,
     formData.rrspMatchingPlan,
-    agreeToDefaultValue,
+    formData.agreeToDefault ? 'Yes' : 'No',
     formData.employeeName,
     formData.employeeEmail,
     new Date(),
     'Pending'
   ]]);
   
-  sendEmailToEmployee(formData.employeeEmail, formData.rrspMatchingPlan);
+  // Create a trigger to send the email after 24 hours
+  ScriptApp.newTrigger('sendDelayedEmailToEmployee')
+    .timeBased()
+    .after(1 * 60 * 1000) // 1 minute in milliseconds - The timing can be changed to 24 hours using (24 * 60 * 60 * 1000)
+    .create();
   
-  return 'Form submitted successfully. An email has been sent to the employee.';
+  return '';
+}
+
+function sendDelayedEmailToEmployee() {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  // Find the last row with 'Pending' status
+  const pendingRow = data.reverse().find(row => row[8] === 'Pending');
+  
+  if (pendingRow) {
+    const employeeEmail = pendingRow[6];
+    const rrspMatchingPlan = pendingRow[3];
+    
+    sendEmailToEmployee(employeeEmail, rrspMatchingPlan);
+    
+    // Update the status to 'Sent'
+    const rowIndex = data.length - data.indexOf(pendingRow);
+    sheet.getRange(rowIndex, 9).setValue('Sent');
+  }
+  
+  // Delete the trigger after execution
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'sendDelayedEmailToEmployee') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
 }
 
 function sendEmailToEmployee(email, rrspMatchingPlan) {
@@ -60,7 +89,7 @@ function sendEmailToEmployee(email, rrspMatchingPlan) {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           }
           h2 {
-            color: #2c3e50;
+            color: #FFFFFF;
             margin-bottom: 20px;
           }
           .logo {
@@ -123,7 +152,7 @@ function processEmployeeForm(formData) {
   // Update status in column 9
   sheet.getRange(row + 1, 9).setValue('Completed');
   
-  return 'Form submitted successfully. Your RRSP enrollment is complete.';
+  return 'Form submitted successfully. Please <a href="https://www.joinyourplan.com/?id=16742&lang=Eng&t=638410114351592616#outside-front-cover" target="_blank">click here</a> to complete your RRSP registration directly with Canada Life';
 }
 
 function getRRSPMatchingPlan(email) {
