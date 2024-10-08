@@ -35,10 +35,10 @@
         <label for="formFillerEmail">Form Filler Email:</label>
         <input type="email" id="formFillerEmail" name="formFillerEmail" required>
         
-        <label for="formFillerCompany">Form Filler Company Name:</label>
+        <label for="formFillerCompany">Legal Entity Name Name:</label>
         <input type="text" id="formFillerCompany" name="formFillerCompany" required>
         
-        <label for="filledBefore">Has someone from your company filled out this form before?</label>
+        <label for="filledBefore">Have you or someone from your Legal entity filled out this form before?</label>
         <select id="filledBefore" name="filledBefore" required>
           <option value="">Select an option</option>
           <option value="Yes">Yes</option>
@@ -53,11 +53,15 @@
           <option value="3">3% Matching Plan</option>
           <option value="5">5% Matching Plan</option>
         </select>
-        <p><small>Note: If you have filled the form previously, please select the matching percentage that applies to your organization</small></p>
         
         <div id="agreeToDefaultSection" class="checkbox-container" style="display: none;">
           <input type="checkbox" id="agreeToDefault" name="agreeToDefault">
-          <label for="agreeToDefault">If this is your first time, please note that the above plan will apply to both current and future employees by default unless you choose to opt out of this benefit. If you agree, please check this box.</label>
+          <label for="agreeToDefault">Please note that the above plan will apply to both current and future employees by default unless you choose to opt out of this benefit. If you agree, please check this box.</label>
+        </div>
+
+        <div id="disagreeToDefaultSection" class="checkbox-container" style="display: none;">
+          <input type="checkbox" id="disagreeToDefault" name="disagreeToDefault">
+          <label for="disagreeToDefault">Please confirm that you have selected the matching percentage that applies to your legal entity.</label>
         </div>
         
         <label for="employeeName">Employee Name:</label>
@@ -71,7 +75,7 @@
       
       <div id="result"></div>
       <div id="submissionConfirmation">
-        Thank you for submitting the form. An email has been sent to the employee.
+        Form submitted successfully. An email will be sent to the employee to complete their enrollment
       </div>
     </div>
     
@@ -90,6 +94,20 @@
         }
       });
       
+      document.getElementById('filledBefore').addEventListener('change', function() {
+        var disagreeToDefaultSection = document.getElementById('disagreeToDefaultSection');
+        var disagreeToDefault = document.getElementById('disagreeToDefault');
+        
+        if (this.value === 'Yes') {
+          disagreeToDefaultSection.style.display = 'flex';
+          disagreeToDefault.required = true;
+        } else {
+          disagreeToDefaultSection.style.display = 'none';
+          disagreeToDefault.required = false;
+          disagreeToDefault.checked = false;
+        }
+      });
+
       document.getElementById('employerForm').addEventListener('submit', function(e) {
         e.preventDefault();
         google.script.run.withSuccessHandler(function(result) {
