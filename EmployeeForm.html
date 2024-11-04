@@ -8,6 +8,7 @@
     <div class="container">
       <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
       <h2>RRSP Enrollment - Employee Form</h2>
+      
       <form id="emailForm">
         <label for="email">Please enter your email:</label>
         <input type="email" id="email" name="email" required>
@@ -42,19 +43,46 @@
       </form>
       
       <div id="result"></div>
+      
+      <!-- Contribution Calculation Section -->
+      <div id="contributionSection" style="display: none; margin-top: 20px;">
+        <h3>Calculate Your RRSP Contributions</h3>
+        <p>Do you want to check your RRSP Contribution Amounts?</p>
+        <div class="button-container">
+          <button id="checkYes" class="calc-button">Yes</button>
+          <button id="checkNo" class="calc-button">No</button>
+        </div>
+        
+        <div id="salaryInputSection" style="display: none; margin-top: 10px;">
+          <label for="annualSalary">Please enter your annual salary:</label>
+          <input type="number" id="annualSalary" name="annualSalary" min="0" step="1000">
+          <button id="calculateBtn">Calculate</button>
+        </div>
+        
+        <div id="calculationResult" style="display: none; margin-top: 20px;">
+          <h4>Your Contribution Details</h4>
+          <p id="biWeeklyPay"></p>
+          <p id="yourContributionPct"></p>
+          <p id="yourContribution"></p>
+          <p id="employerContribution"></p>
+          <p id="totalContribution"></p>
+        </div>
+      </div>
+      <!-- End of Contribution Calculation Section -->
+      
     </div>
     
     <script>
       document.getElementById('emailForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        var email = this.email.value;
+        var email = this.email.value.trim();
         google.script.run.withSuccessHandler(function(rrspMatchingPlan) {
-          if (rrspMatchingPlan) {
+          if (rrspMatchingPlan !== null) {
             document.getElementById('rrspMatchingPlan').innerHTML = 'Your RRSP Matching Plan: ' + rrspMatchingPlan + '%';
             document.getElementById('emailForm').style.display = 'none';
             document.getElementById('rrspForm').style.display = 'block';
           } else {
-            document.getElementById('result').innerHTML = 'Error: Email not found or RRSP Matching Plan not set.';
+            document.getElementById('result').innerHTML = '<p class="error">Error: Email not found or RRSP Matching Plan not set.</p>';
           }
         }).getRRSPMatchingPlan(email);
       });
@@ -96,15 +124,47 @@
         var additionalPercentage = (wantToMatch === 'Yes' && contributeMore === 'Yes') ? this.additionalPercentage.value : 'N/A';
         
         google.script.run.withSuccessHandler(function(result) {
-          document.getElementById('result').innerHTML = result;
+          document.getElementById('result').innerHTML = '<p class="success">' + result + '</p>';
           document.getElementById('rrspForm').style.display = 'none';
+          document.getElementById('contributionSection').style.display = 'block';
         }).processEmployeeForm({
-          email: document.getElementById('email').value,
+          email: document.getElementById('email').value.trim(),
           wantToMatch: wantToMatch,
           contributeMore: contributeMore,
           additionalPercentage: additionalPercentage
         });
       });
+      
+      // Contribution Calculation Script
+      document.getElementById('checkYes').addEventListener('click', function() {
+        document.getElementById('salaryInputSection').style.display = 'block';
+      });
+      
+      document.getElementById('checkNo').addEventListener('click', function() {
+        document.getElementById('contributionSection').style.display = 'none';
+      });
+      
+      document.getElementById('calculateBtn').addEventListener('click', function() {
+        var annualSalary = parseFloat(document.getElementById('annualSalary').value);
+        if (isNaN(annualSalary) || annualSalary <= 0) {
+          alert('Please enter a valid annual salary.');
+          return;
+        }
+        var email = document.getElementById('email').value.trim();
+        google.script.run.withSuccessHandler(function(contributions) {
+          if (contributions.error) {
+            document.getElementById('calculationResult').innerHTML = '<p class="error">' + contributions.error + '</p>';
+          } else {
+            document.getElementById('biWeeklyPay').innerHTML = 'Bi-weekly Pay: $' + contributions.biWeeklyPay.toFixed(2)
+            document.getElementById('yourContributionPct').innerHTML = 'Your Contribution Percentage: ' + contributions.yourContributionPct.toFixed(2) + '%';
+            document.getElementById('yourContribution').innerHTML = 'Your Contribution: $' + contributions.yourContribution.toFixed(2);
+            document.getElementById('employerContribution').innerHTML = 'Employer Contribution: $' + contributions.employerContribution.toFixed(2);
+            document.getElementById('totalContribution').innerHTML = 'Total Bi-weekly Contribution: $' + contributions.totalContribution.toFixed(2);
+            document.getElementById('calculationResult').style.display = 'block';
+          }
+        }).calculateRRSPContributions(email, annualSalary);
+      });
+      // End of Contribution Calculation Script
     </script>
   </body>
 </html>
