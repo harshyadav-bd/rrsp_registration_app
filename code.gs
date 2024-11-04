@@ -6,7 +6,7 @@ function doGet(e) {
   if (e.parameter.form == 'employee') {
     return HtmlService.createTemplateFromFile('EmployeeForm')
       .evaluate()
-      .setTitle('RRSP Enrollment - Employee Form');
+      .setTitle('Borderless: Please finish your RRSP Enrollment');
   }
   return HtmlService.createTemplateFromFile('EmployerForm')
     .evaluate()
@@ -32,7 +32,7 @@ function processEmployerForm(formData) {
   // Create a trigger to send the email after 24 hours
   ScriptApp.newTrigger('sendDelayedEmailToEmployee')
     .timeBased()
-    .after(1 * 60 * 1000) // 1 minute in milliseconds - The timing can be changed to 24 hours using (24 * 60 * 60 * 1000)
+    .after(24 * 60 * 60 * 1000) // 24 hours in milliseconds
     .create();
   
   return '';
@@ -65,8 +65,9 @@ function sendDelayedEmailToEmployee() {
   }
 }
 
+
 function sendEmailToEmployee(email, rrspMatchingPlan) {
-  const subject = 'RRSP Enrollment - Employee Form';
+  const subject = 'Borderless: Please finish your RRSP Enrollment';
   const body = `
     <html>
       <head>
@@ -89,7 +90,7 @@ function sendEmailToEmployee(email, rrspMatchingPlan) {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
           }
           h2 {
-            color: #FFFFFF;
+            color: #2c3e50;
             margin-bottom: 20px;
           }
           .logo {
@@ -112,8 +113,8 @@ function sendEmailToEmployee(email, rrspMatchingPlan) {
         <div class="container">
           <div class="content">
             <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
-            <h2>RRSP Enrollment</h2>
-            <p>Dear Employee,</p>
+            <h2>Registered Retirement Savings Plan (RRSP) Enrollment</h2>
+            <p>Hello,</p>
             <p>Please complete your RRSP enrollment by filling out the form using the link below.</p>
             <p>Your RRSP Matching Plan: ${rrspMatchingPlan}%</p>
             <a href="${ScriptApp.getService().getUrl()}?form=employee" class="button">Complete RRSP Enrollment</a>
@@ -123,10 +124,14 @@ function sendEmailToEmployee(email, rrspMatchingPlan) {
     </html>
   `;
   
+  const fromEmail = 'ops@hireborderless.com'; // Replace with your desired email address
+
   MailApp.sendEmail({
     to: email,
     subject: subject,
-    htmlBody: body
+    htmlBody: body,
+    from: fromEmail,
+    name: 'Borderless Onboarding' // Optional: You can set a custom name for the sender
   });
 }
 
@@ -138,7 +143,7 @@ function processEmployeeForm(formData) {
   const row = data.findIndex(row => row[6] === formData.email);
   
   if (row === -1) {
-    return 'Error: Employee email not found.';
+    return 'Error: Employee email not found. Please select the email that is associated with your Borderless account.';
   }
   
   // Update columns 10-13 with the new data
@@ -152,7 +157,7 @@ function processEmployeeForm(formData) {
   // Update status in column 9
   sheet.getRange(row + 1, 9).setValue('Completed');
   
-  return 'Form submitted successfully. Please <a href="https://www.joinyourplan.com/?id=16742&lang=Eng&t=638410114351592616#outside-front-cover" target="_blank">click here</a> to complete your RRSP registration directly with Canada Life';
+  return '<strong>Form submitted successfully. Please <a href="https://www.joinyourplan.com/?id=16742&lang=Eng&t=638410114351592616#outside-front-cover" target="_blank">click here</a> to complete your RRSP registration directly with Canada Life.</strong>';
 }
 
 function getRRSPMatchingPlan(email) {
@@ -168,6 +173,46 @@ function getRRSPMatchingPlan(email) {
   
   // RRSP Matching Plan is in column 4 (index 3)
   return row[3];
+}
+
+// New Function to Calculate RRSP Contributions
+function calculateRRSPContributions(email, annualSalary) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  // Find the row with the matching email in column 7 (index 6)
+  const row = data.find(row => row[6] === email);
+  
+  if (!row) {
+    return { error: 'RRSP Matching Plan not found for the provided email.' };
+  }
+  
+  // RRSP Matching Plan is in column 4 (index 3)
+  const rrspMatchingPlan = parseFloat(row[3]);
+  
+  if (isNaN(rrspMatchingPlan)) {
+    return { error: 'Invalid RRSP Matching Plan value.' };
+  }
+  
+  // Additional Percentage is in column 12 (index 11)
+  let additionalPercentage = 0;
+  if (row.length > 11 && !isNaN(parseFloat(row[11]))) {
+    additionalPercentage = parseFloat(row[11]);
+  }
+  
+  const biWeeklyPay = annualSalary / 26;
+  const yourContributionPct = rrspMatchingPlan + additionalPercentage;
+  const yourContribution = (biWeeklyPay * yourContributionPct) / 100;
+  const employerContribution = (biWeeklyPay * rrspMatchingPlan) / 100;
+  const totalContribution = yourContribution + employerContribution;
+  
+  return {
+    biWeeklyPay: biWeeklyPay,
+    yourContributionPct,
+    yourContribution: yourContribution,
+    employerContribution: employerContribution,
+    totalContribution: totalContribution
+  };
 }
 
 function getCommonCSS() {
@@ -252,6 +297,33 @@ function getCommonCSS() {
       .error {
         background-color: #f8d7da;
         color: #721c24;
+      }
+      
+      /* New Styles for Contribution Section */
+      .button-container {
+        display: flex;
+        justify-content: center; /* Centers the buttons horizontally */
+        gap: 20px; /* Adds space between the buttons */
+        margin-top: 10px;
+      }
+      
+      .calc-button {
+        flex: 1; /* Makes buttons take equal width */
+        max-width: 100px; /* Optional: limits the maximum width */
+        padding: 10px 0; /* Adjusts vertical padding */
+        font-size: 16px;
+      }
+      
+      /* Responsive Design */
+      @media (max-width: 500px) {
+        .button-container {
+          flex-direction: column;
+          gap: 10px;
+        }
+        .calc-button {
+          width: 100%;
+          max-width: none;
+        }
       }
     </style>
   `;
