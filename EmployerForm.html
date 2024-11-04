@@ -49,10 +49,16 @@
         <select id="rrspMatchingPlan" name="rrspMatchingPlan" required>
           <option value="">Select an option</option>
           <option value="0">0% No Employer Match/Employee-Only Contribution</option>
-          <option value="2">2% Matching Plan</option>
-          <option value="3">3% Matching Plan</option>
-          <option value="5">5% Matching Plan</option>
+          <option value="2">2% Matching Plan (Basic)</option>
+          <option value="3">3% Matching Plan (Plus)</option>
+          <option value="5">5% Matching Plan (Premium)</option>
+          <option value="custom">Custom Matching Plan</option>
         </select>
+
+        <div id="customPlanSection" style="display: none;">
+          <label for="customPercentage">Enter Custom Matching Percentage:</label>
+          <input type="number" id="customPercentage" name="customPercentage" min="0" max="100" step="0.1">
+        </div>
         
         <div id="agreeToDefaultSection" class="checkbox-container" style="display: none;">
           <input type="checkbox" id="agreeToDefault" name="agreeToDefault">
@@ -108,8 +114,25 @@
         }
       });
 
+      document.getElementById('rrspMatchingPlan').addEventListener('change', function() {
+        var customSection = document.getElementById('customPlanSection');
+        var customInput = document.getElementById('customPercentage');
+        
+        if (this.value === 'custom') {
+          customSection.style.display = 'block';
+          customInput.required = true;
+        } else {
+          customSection.style.display = 'none';
+          customInput.required = false;
+          customInput.value = '';
+        }
+      });
+
       document.getElementById('employerForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        var rrspValue = this.rrspMatchingPlan.value;
+        var finalRrspValue = rrspValue === 'custom' ? this.customPercentage.value : rrspValue;
+        
         google.script.run.withSuccessHandler(function(result) {
           document.getElementById('result').innerHTML = result;
           document.getElementById('employerForm').style.display = 'none';
@@ -118,7 +141,7 @@
           formFillerEmail: this.formFillerEmail.value,
           formFillerCompany: this.formFillerCompany.value,
           filledBefore: this.filledBefore.value,
-          rrspMatchingPlan: this.rrspMatchingPlan.value,
+          rrspMatchingPlan: finalRrspValue,
           agreeToDefault: this.agreeToDefault.checked,
           employeeName: this.employeeName.value,
           employeeEmail: this.employeeEmail.value
