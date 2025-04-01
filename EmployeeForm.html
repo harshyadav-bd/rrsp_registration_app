@@ -1,170 +1,270 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <base target="_top">
     <?!= getCommonCSS() ?>
-  </head>
-  <body>
+    <style>
+        .submit-button {
+            position: relative;
+            width: 100%;
+        }
+        .submit-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .spinner {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
     <div class="container">
-      <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
-      <h2>RRSP Enrollment - Employee Form</h2>
-      
-      <form id="emailForm">
-        <label for="email">Please enter your email:</label>
-        <input type="email" id="email" name="email" required>
-        <button type="submit">Verify Email</button>
-      </form>
-      
-      <form id="rrspForm" style="display: none;">
-        <p id="rrspMatchingPlan"></p>
+        <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
+        <h2>RRSP Enrollment - Employee Form</h2>
         
-        <label for="wantToMatch">Do you want to contribute to RRSP and match employer percentage?</label>
-        <select id="wantToMatch" name="wantToMatch" required>
-          <option value="">Select an option</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-        
-        <div id="contributeMoreSection" style="display: none;">
-          <label for="contributeMore">Do you want to contribute more than the standard matching plan above?</label>
-          <select id="contributeMore" name="contributeMore">
-            <option value="">Select an option</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-          
-          <div id="additionalContribution" style="display: none;">
-            <label for="additionalPercentage">Please enter the percentage that you want to contribute on top of regular matching:</label>
-            <input type="number" id="additionalPercentage" name="additionalPercentage" min="0" max="100" step="0.1">
-          </div>
+        <form id="emailForm">
+            <label for="email">Please enter your email:</label>
+            <input type="email" id="email" name="email" required>
+            <div class="submit-button">
+                <button type="submit" id="verifyButton">Verify Email</button>
+                <div class="spinner" id="verifySpinner"></div>
+            </div>
+        </form>
+
+        <form id="rrspForm" style="display: none;">
+            <p id="rrspMatchingPlan"></p>
+            
+            <label for="wantToMatch">Do you want to contribute to RRSP and match employer percentage?</label>
+            <select id="wantToMatch" name="wantToMatch" required>
+                <option value="">Select an option</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+
+            <div id="contributeMoreSection" style="display: none;">
+                <label for="contributeMore">Do you want to contribute more than the standard matching plan above?</label>
+                <select id="contributeMore" name="contributeMore">
+                    <option value="">Select an option</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+
+                <div id="additionalContribution" style="display: none;">
+                    <label for="additionalPercentage">Please enter the percentage that you want to contribute on top of regular matching:</label>
+                    <input type="number" id="additionalPercentage" name="additionalPercentage" min="0" max="100" step="0.1">
+                </div>
+            </div>
+
+            <div class="submit-button">
+                <input type="submit" value="Submit" id="submitButton">
+                <div class="spinner" id="submitSpinner"></div>
+            </div>
+        </form>
+
+        <div id="result"></div>
+
+        <!-- Contribution Calculation Section -->
+        <div id="contributionSection" style="display: none; margin-top: 20px;">
+            <h3>Calculate Your RRSP Contributions</h3>
+            <p>Do you want to check your RRSP Contribution Amounts?</p>
+            <div class="button-container">
+                <button id="checkYes" class="calc-button">Yes</button>
+                <button id="checkNo" class="calc-button">No</button>
+            </div>
+
+            <div id="salaryInputSection" style="display: none; margin-top: 10px;">
+                <label for="annualSalary">Please enter your annual salary:</label>
+                <input type="number" id="annualSalary" name="annualSalary" min="0" step="1000">
+                <div class="submit-button">
+                    <button id="calculateBtn">Calculate</button>
+                    <div class="spinner" id="calculateSpinner"></div>
+                </div>
+            </div>
+
+            <div id="calculationResult" style="display: none; margin-top: 20px;">
+                <h4>Your Contribution Details</h4>
+                <p id="biWeeklyPay"></p>
+                <p id="yourContributionPct"></p>
+                <p id="yourContribution"></p>
+                <p id="employerContribution"></p>
+                <p id="totalContribution"></p>
+            </div>
         </div>
-        
-        <input type="submit" value="Submit">
-      </form>
-      
-      <div id="result"></div>
-      
-      <!-- Contribution Calculation Section -->
-      <div id="contributionSection" style="display: none; margin-top: 20px;">
-        <h3>Calculate Your RRSP Contributions</h3>
-        <p>Do you want to check your RRSP Contribution Amounts?</p>
-        <div class="button-container">
-          <button id="checkYes" class="calc-button">Yes</button>
-          <button id="checkNo" class="calc-button">No</button>
-        </div>
-        
-        <div id="salaryInputSection" style="display: none; margin-top: 10px;">
-          <label for="annualSalary">Please enter your annual salary:</label>
-          <input type="number" id="annualSalary" name="annualSalary" min="0" step="1000">
-          <button id="calculateBtn">Calculate</button>
-        </div>
-        
-        <div id="calculationResult" style="display: none; margin-top: 20px;">
-          <h4>Your Contribution Details</h4>
-          <p id="biWeeklyPay"></p>
-          <p id="yourContributionPct"></p>
-          <p id="yourContribution"></p>
-          <p id="employerContribution"></p>
-          <p id="totalContribution"></p>
-        </div>
-      </div>
-      <!-- End of Contribution Calculation Section -->
-      
     </div>
-    
+
     <script>
-      document.getElementById('emailForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        var email = this.email.value.trim();
-        google.script.run.withSuccessHandler(function(rrspMatchingPlan) {
-          if (rrspMatchingPlan !== null) {
-            document.getElementById('rrspMatchingPlan').innerHTML = 'Your RRSP Matching Plan: ' + rrspMatchingPlan + '%';
-            document.getElementById('emailForm').style.display = 'none';
-            document.getElementById('rrspForm').style.display = 'block';
-          } else {
-            document.getElementById('result').innerHTML = '<p class="error">Error: Email not found or RRSP Matching Plan not set.</p>';
-          }
-        }).getRRSPMatchingPlan(email);
-      });
-      
-      document.getElementById('wantToMatch').addEventListener('change', function() {
-        var contributeMoreSection = document.getElementById('contributeMoreSection');
-        var contributeMore = document.getElementById('contributeMore');
-        var additionalPercentage = document.getElementById('additionalPercentage');
-        
-        if (this.value === 'Yes') {
-          contributeMoreSection.style.display = 'block';
-          contributeMore.required = true;
-        } else {
-          contributeMoreSection.style.display = 'none';
-          contributeMore.required = false;
-          contributeMore.value = '';
-          additionalPercentage.value = '';
-        }
-      });
-      
-      document.getElementById('contributeMore').addEventListener('change', function() {
-        var additionalContribution = document.getElementById('additionalContribution');
-        var additionalPercentage = document.getElementById('additionalPercentage');
-        
-        if (this.value === 'Yes') {
-          additionalContribution.style.display = 'block';
-          additionalPercentage.required = true;
-        } else {
-          additionalContribution.style.display = 'none';
-          additionalPercentage.required = false;
-          additionalPercentage.value = '';
-        }
-      });
-      
-      document.getElementById('rrspForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        var wantToMatch = this.wantToMatch.value;
-        var contributeMore = wantToMatch === 'Yes' ? this.contributeMore.value : 'N/A';
-        var additionalPercentage = (wantToMatch === 'Yes' && contributeMore === 'Yes') ? this.additionalPercentage.value : 'N/A';
-        
-        google.script.run.withSuccessHandler(function(result) {
-          document.getElementById('result').innerHTML = '<p class="success">' + result + '</p>';
-          document.getElementById('rrspForm').style.display = 'none';
-          document.getElementById('contributionSection').style.display = 'block';
-        }).processEmployeeForm({
-          email: document.getElementById('email').value.trim(),
-          wantToMatch: wantToMatch,
-          contributeMore: contributeMore,
-          additionalPercentage: additionalPercentage
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const verifyButton = document.getElementById('verifyButton');
+            const verifySpinner = document.getElementById('verifySpinner');
+
+            verifyButton.disabled = true;
+            verifyButton.textContent = 'Verifying...';
+            verifySpinner.style.display = 'block';
+
+            var email = this.email.value.trim();
+            
+            google.script.run
+                .withSuccessHandler(function(rrspMatchingPlan) {
+                    if (rrspMatchingPlan !== null) {
+                        document.getElementById('rrspMatchingPlan').innerHTML = 'Your RRSP Matching Plan: ' + rrspMatchingPlan + '%';
+                        document.getElementById('emailForm').style.display = 'none';
+                        document.getElementById('rrspForm').style.display = 'block';
+                    } else {
+                        document.getElementById('result').innerHTML = '<p class="error">Error: Email not found or RRSP Matching Plan not set.</p>';
+                    }
+                    
+                    verifyButton.disabled = false;
+                    verifyButton.textContent = 'Verify Email';
+                    verifySpinner.style.display = 'none';
+                })
+                .withFailureHandler(function(error) {
+                    document.getElementById('result').innerHTML = '<p class="error">Error: ' + error + '</p>';
+                    
+                    verifyButton.disabled = false;
+                    verifyButton.textContent = 'Verify Email';
+                    verifySpinner.style.display = 'none';
+                })
+                .getRRSPMatchingPlan(email);
         });
-      });
-      
-      // Contribution Calculation Script
-      document.getElementById('checkYes').addEventListener('click', function() {
-        document.getElementById('salaryInputSection').style.display = 'block';
-      });
-      
-      document.getElementById('checkNo').addEventListener('click', function() {
-        document.getElementById('contributionSection').style.display = 'none';
-      });
-      
-      document.getElementById('calculateBtn').addEventListener('click', function() {
-        var annualSalary = parseFloat(document.getElementById('annualSalary').value);
-        if (isNaN(annualSalary) || annualSalary <= 0) {
-          alert('Please enter a valid annual salary.');
-          return;
-        }
-        var email = document.getElementById('email').value.trim();
-        google.script.run.withSuccessHandler(function(contributions) {
-          if (contributions.error) {
-            document.getElementById('calculationResult').innerHTML = '<p class="error">' + contributions.error + '</p>';
-          } else {
-            document.getElementById('biWeeklyPay').innerHTML = 'Bi-weekly Pay: $' + contributions.biWeeklyPay.toFixed(2)
-            document.getElementById('yourContributionPct').innerHTML = 'Your Contribution Percentage: ' + contributions.yourContributionPct.toFixed(2) + '%';
-            document.getElementById('yourContribution').innerHTML = 'Your Contribution: $' + contributions.yourContribution.toFixed(2);
-            document.getElementById('employerContribution').innerHTML = 'Employer Contribution: $' + contributions.employerContribution.toFixed(2);
-            document.getElementById('totalContribution').innerHTML = 'Total Bi-weekly Contribution: $' + contributions.totalContribution.toFixed(2);
-            document.getElementById('calculationResult').style.display = 'block';
-          }
-        }).calculateRRSPContributions(email, annualSalary);
-      });
-      // End of Contribution Calculation Script
+
+        document.getElementById('wantToMatch').addEventListener('change', function() {
+            var contributeMoreSection = document.getElementById('contributeMoreSection');
+            var contributeMore = document.getElementById('contributeMore');
+            var additionalPercentage = document.getElementById('additionalPercentage');
+            
+            if (this.value === 'Yes') {
+                contributeMoreSection.style.display = 'block';
+                contributeMore.required = true;
+            } else {
+                contributeMoreSection.style.display = 'none';
+                contributeMore.required = false;
+                contributeMore.value = '';
+                additionalPercentage.value = '';
+            }
+        });
+
+        document.getElementById('contributeMore').addEventListener('change', function() {
+            var additionalContribution = document.getElementById('additionalContribution');
+            var additionalPercentage = document.getElementById('additionalPercentage');
+            
+            if (this.value === 'Yes') {
+                additionalContribution.style.display = 'block';
+                additionalPercentage.required = true;
+            } else {
+                additionalContribution.style.display = 'none';
+                additionalPercentage.required = false;
+                additionalPercentage.value = '';
+            }
+        });
+
+        document.getElementById('rrspForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const submitButton = document.getElementById('submitButton');
+            const submitSpinner = document.getElementById('submitSpinner');
+
+            submitButton.disabled = true;
+            submitButton.value = 'Processing...';
+            submitSpinner.style.display = 'block';
+
+            var wantToMatch = this.wantToMatch.value;
+            var contributeMore = wantToMatch === 'Yes' ? this.contributeMore.value : 'N/A';
+            var additionalPercentage = (wantToMatch === 'Yes' && contributeMore === 'Yes') ? this.additionalPercentage.value : 'N/A';
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    document.getElementById('result').innerHTML = '<p class="success">' + result + '</p>';
+                    document.getElementById('rrspForm').style.display = 'none';
+                    document.getElementById('contributionSection').style.display = 'block';
+                    
+                    submitButton.disabled = false;
+                    submitButton.value = 'Submit';
+                    submitSpinner.style.display = 'none';
+                })
+                .withFailureHandler(function(error) {
+                    document.getElementById('result').innerHTML = '<p class="error">Error: ' + error + '</p>';
+                    
+                    submitButton.disabled = false;
+                    submitButton.value = 'Submit';
+                    submitSpinner.style.display = 'none';
+                })
+                .processEmployeeForm({
+                    email: document.getElementById('email').value.trim(),
+                    wantToMatch: wantToMatch,
+                    contributeMore: contributeMore,
+                    additionalPercentage: additionalPercentage
+                });
+        });
+
+        document.getElementById('checkYes').addEventListener('click', function() {
+            document.getElementById('salaryInputSection').style.display = 'block';
+        });
+
+        document.getElementById('checkNo').addEventListener('click', function() {
+            document.getElementById('contributionSection').style.display = 'none';
+        });
+
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            const calculateButton = document.getElementById('calculateBtn');
+            const calculateSpinner = document.getElementById('calculateSpinner');
+
+            calculateButton.disabled = true;
+            calculateButton.textContent = 'Calculating...';
+            calculateSpinner.style.display = 'block';
+
+            var annualSalary = parseFloat(document.getElementById('annualSalary').value);
+            if (isNaN(annualSalary) || annualSalary <= 0) {
+                alert('Please enter a valid annual salary.');
+                calculateButton.disabled = false;
+                calculateButton.textContent = 'Calculate';
+                calculateSpinner.style.display = 'none';
+                return;
+            }
+
+            var email = document.getElementById('email').value.trim();
+            
+            google.script.run
+                .withSuccessHandler(function(contributions) {
+                    if (contributions.error) {
+                        document.getElementById('calculationResult').innerHTML = '<p class="error">' + contributions.error + '</p>';
+                    } else {
+                        document.getElementById('biWeeklyPay').innerHTML = 'Bi-weekly Pay: $' + contributions.biWeeklyPay.toFixed(2);
+                        document.getElementById('yourContributionPct').innerHTML = 'Your Contribution Percentage: ' + contributions.yourContributionPct.toFixed(2) + '%';
+                        document.getElementById('yourContribution').innerHTML = 'Your Contribution: $' + contributions.yourContribution.toFixed(2);
+                        document.getElementById('employerContribution').innerHTML = 'Employer Contribution: $' + contributions.employerContribution.toFixed(2);
+                        document.getElementById('totalContribution').innerHTML = 'Total Bi-weekly Contribution: $' + contributions.totalContribution.toFixed(2);
+                        document.getElementById('calculationResult').style.display = 'block';
+                    }
+                    
+                    calculateButton.disabled = false;
+                    calculateButton.textContent = 'Calculate';
+                    calculateSpinner.style.display = 'none';
+                })
+                .withFailureHandler(function(error) {
+                    document.getElementById('calculationResult').innerHTML = '<p class="error">Error: ' + error + '</p>';
+                    
+                    calculateButton.disabled = false;
+                    calculateButton.textContent = 'Calculate';
+                    calculateSpinner.style.display = 'none';
+                })
+                .calculateRRSPContributions(email, annualSalary);
+        });
     </script>
-  </body>
+</body>
 </html>
