@@ -1,152 +1,274 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <base target="_top">
     <?!= getCommonCSS() ?>
     <style>
-      .checkbox-container {
-        display: flex;
-        align-items: flex-start;
-        margin-bottom: 20px;
-      }
-      .checkbox-container input {
-        margin-right: 10px;
-        margin-top: 5px;
-      }
-      .checkbox-container label {
-        flex: 1;
-      }
-      #submissionConfirmation {
-        display: none;
-        background-color: #d4edda;
-        color: #155724;
-        padding: 15px;
-        border-radius: 4px;
-        margin-top: 20px;
-        text-align: center;
-      }
+        .checkbox-container {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .checkbox-container input {
+            margin-right: 10px;
+            margin-top: 5px;
+        }
+        .checkbox-container label {
+            flex: 1;
+        }
+        #submissionConfirmation {
+            display: none;
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .notification {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .submit-button {
+            position: relative;
+            width: 100%;
+        }
+        .submit-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .spinner {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+        input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div class="container">
-      <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
-      <h2>RRSP Enrollment - Employer Form</h2>
-      <form id="employerForm">
-        <label for="formFillerEmail">Form Filler Email:</label>
-        <input type="email" id="formFillerEmail" name="formFillerEmail" required>
+        <img src="https://lh3.googleusercontent.com/d/1PWA1M0-RgffWznEMCygAxsjKjLOTFi0H" alt="Company Logo" class="logo">
+        <h2>RRSP Enrollment - Employer Form</h2>
         
-        <label for="formFillerCompany">Legal Entity Name:</label>
-        <input type="text" id="formFillerCompany" name="formFillerCompany" required>
-        
-        <label for="filledBefore">Have you or someone from your Legal entity registerd for RRSP Matching before?</label>
-        <select id="filledBefore" name="filledBefore" required>
-          <option value="">Select an option</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-        </select>
-        
-        <label for="rrspMatchingPlan">Select your RRSP Matching Plan:</label>
-        <select id="rrspMatchingPlan" name="rrspMatchingPlan" required>
-          <option value="">Select an option</option>
-          <option value="0">0% No Employer Match/Employee-Only Contribution</option>
-          <option value="2">2% Matching Plan (Basic)</option>
-          <option value="3">3% Matching Plan (Plus)</option>
-          <option value="5">5% Matching Plan (Premium)</option>
-          <option value="custom">Custom Matching Plan</option>
-        </select>
+        <form id="employerForm">
+            <label for="formFillerEmail">Form Filler Email:</label>
+            <input type="email" id="formFillerEmail" name="formFillerEmail" required>
 
-        <div id="customPlanSection" style="display: none;">
-          <label for="customPercentage">Enter Custom Matching Percentage:</label>
-          <input type="number" id="customPercentage" name="customPercentage" min="0" max="100" step="0.1">
-        </div>
-        
-        <div id="agreeToDefaultSection" class="checkbox-container" style="display: none;">
-          <input type="checkbox" id="agreeToDefault" name="agreeToDefault">
-          <label for="agreeToDefault">Please note that the above plan will apply to both current and future employees by default unless you choose to opt out of this benefit. If you agree, please check this box.</label>
-        </div>
+            <label for="formFillerCompany">Legal Entity Name:</label>
+            <input type="text" id="formFillerCompany" name="formFillerCompany" required>
 
-        <div id="disagreeToDefaultSection" class="checkbox-container" style="display: none;">
-          <input type="checkbox" id="disagreeToDefault" name="disagreeToDefault">
-          <label for="disagreeToDefault">Please confirm that you have selected the matching percentage that applies to your legal entity.</label>
+            <div id="matchingPlanSection">
+                <label for="rrspMatchingPlan">Select your RRSP Matching Plan:</label>
+                <select id="rrspMatchingPlan" name="rrspMatchingPlan">
+                    <option value="">Select an option</option>
+                    <option value="0">0% No Employer Match/Employee-Only Contribution</option>
+                    <option value="2">2% Matching Plan (Basic)</option>
+                    <option value="3">3% Matching Plan (Standard)</option>
+                    <option value="5">5% Matching Plan (Premium)</option>
+                    <option value="custom">Custom Matching Plan</option>
+                </select>
+            </div>
+
+            <div id="customPlanSection" style="display: none;">
+                <label for="customPercentage">Enter Custom Matching Percentage:</label>
+                <input type="number" id="customPercentage" name="customPercentage" min="0" max="100" step="0.1">
+            </div>
+
+            <div id="agreeToDefaultSection" class="checkbox-container">
+                <input type="checkbox" id="agreeToDefault" name="agreeToDefault">
+                <label for="agreeToDefault">Please note that the above plan will apply to both current and future employees by default unless you choose to opt out of this benefit. If you agree, please check this box.</label>
+            </div>
+
+            <label for="employeeName">Employee Name:</label>
+            <input type="text" id="employeeName" name="employeeName" required>
+
+            <label for="employeeEmail">Employee Email:</label>
+            <input type="email" id="employeeEmail" name="employeeEmail" required>
+
+            <div class="submit-button">
+                <input type="submit" value="Submit" id="submitButton">
+                <div class="spinner" id="submitSpinner"></div>
+            </div>
+        </form>
+
+        <div id="result"></div>
+        <div id="submissionConfirmation">
+            Form submitted successfully. An email will be sent to the employee to complete their enrollment
         </div>
-        
-        <label for="employeeName">Employee Name:</label>
-        <input type="text" id="employeeName" name="employeeName" required>
-        
-        <label for="employeeEmail">Employee Email:</label>
-        <input type="email" id="employeeEmail" name="employeeEmail" required>
-        
-        <input type="submit" value="Submit">
-      </form>
-      
-      <div id="result"></div>
-      <div id="submissionConfirmation">
-        Form submitted successfully. An email will be sent to the employee to complete their enrollment
-      </div>
     </div>
-    
+
     <script>
-      document.getElementById('filledBefore').addEventListener('change', function() {
-        var agreeToDefaultSection = document.getElementById('agreeToDefaultSection');
-        var agreeToDefault = document.getElementById('agreeToDefault');
-        
-        if (this.value === 'No') {
-          agreeToDefaultSection.style.display = 'flex';
-          agreeToDefault.required = true;
-        } else {
-          agreeToDefaultSection.style.display = 'none';
-          agreeToDefault.required = false;
-          agreeToDefault.checked = false;
-        }
-      });
-      
-      document.getElementById('filledBefore').addEventListener('change', function() {
-        var disagreeToDefaultSection = document.getElementById('disagreeToDefaultSection');
-        var disagreeToDefault = document.getElementById('disagreeToDefault');
-        
-        if (this.value === 'Yes') {
-          disagreeToDefaultSection.style.display = 'flex';
-          disagreeToDefault.required = true;
-        } else {
-          disagreeToDefaultSection.style.display = 'none';
-          disagreeToDefault.required = false;
-          disagreeToDefault.checked = false;
-        }
-      });
+        // Check for existing domain when email is entered
+        document.getElementById('formFillerEmail').addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (email) {
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        const matchingPlanSection = document.getElementById('matchingPlanSection');
+                        const formFillerCompany = document.getElementById('formFillerCompany');
+                        const agreeToDefaultSection = document.getElementById('agreeToDefaultSection');
+                        const customPlanSection = document.getElementById('customPlanSection');
+                        const rrspMatchingPlan = document.getElementById('rrspMatchingPlan');
+                        const agreeToDefault = document.getElementById('agreeToDefault');
 
-      document.getElementById('rrspMatchingPlan').addEventListener('change', function() {
-        var customSection = document.getElementById('customPlanSection');
-        var customInput = document.getElementById('customPercentage');
-        
-        if (this.value === 'custom') {
-          customSection.style.display = 'block';
-          customInput.required = true;
-        } else {
-          customSection.style.display = 'none';
-          customInput.required = false;
-          customInput.value = '';
-        }
-      });
+                        if (result.found) {
+                            // Remove required attributes
+                            if (rrspMatchingPlan) {
+                                rrspMatchingPlan.removeAttribute('required');
+                            }
+                            if (agreeToDefault) {
+                                agreeToDefault.removeAttribute('required');
+                            }
 
-      document.getElementById('employerForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        var rrspValue = this.rrspMatchingPlan.value;
-        var finalRrspValue = rrspValue === 'custom' ? this.customPercentage.value : rrspValue;
-        
-        google.script.run.withSuccessHandler(function(result) {
-          document.getElementById('result').innerHTML = result;
-          document.getElementById('employerForm').style.display = 'none';
-          document.getElementById('submissionConfirmation').style.display = 'block';
-        }).processEmployerForm({
-          formFillerEmail: this.formFillerEmail.value,
-          formFillerCompany: this.formFillerCompany.value,
-          filledBefore: this.filledBefore.value,
-          rrspMatchingPlan: finalRrspValue,
-          agreeToDefault: this.agreeToDefault.checked,
-          employeeName: this.employeeName.value,
-          employeeEmail: this.employeeEmail.value
+                            // Create notification message
+                            const existingNotification = document.querySelector('.notification');
+                            if (existingNotification) {
+                                existingNotification.remove();
+                            }
+
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = 'notification';
+                            messageDiv.innerHTML = `Our records indicate that your Legal Entity has the ${result.matchingPlan}% matching plan. The same will be applied to this employee `;
+                            formFillerCompany.parentNode.insertBefore(messageDiv, matchingPlanSection);
+
+                            // Hide sections
+                            matchingPlanSection.style.display = 'none';
+                            customPlanSection.style.display = 'none';
+                            agreeToDefaultSection.style.display = 'none';
+
+                            // Pre-fill and disable company name
+                            formFillerCompany.value = result.companyName;
+                            formFillerCompany.disabled = true;
+
+                            // Set hidden input for RRSP value
+                            let hiddenInput = document.getElementById('hiddenRrspValue');
+                            if (!hiddenInput) {
+                                hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.id = 'hiddenRrspValue';
+                                hiddenInput.name = 'rrspMatchingPlan';
+                                document.getElementById('employerForm').appendChild(hiddenInput);
+                            }
+                            hiddenInput.value = result.matchingPlan;
+                        } else {
+                            // Add required attributes back
+                            if (rrspMatchingPlan) {
+                                rrspMatchingPlan.setAttribute('required', '');
+                            }
+                            if (agreeToDefault) {
+                                agreeToDefault.setAttribute('required', '');
+                            }
+
+                            // Enable all fields for new registration
+                            matchingPlanSection.style.display = 'block';
+                            formFillerCompany.disabled = false;
+                            agreeToDefaultSection.style.display = 'flex';
+
+                            // Remove any existing notification
+                            const existingNotification = document.querySelector('.notification');
+                            if (existingNotification) {
+                                existingNotification.remove();
+                            }
+
+                            // Remove any existing hidden input
+                            const hiddenInput = document.getElementById('hiddenRrspValue');
+                            if (hiddenInput) {
+                                hiddenInput.remove();
+                            }
+                        }
+                    })
+                    .checkExistingDomain(email);
+            }
         });
-      });
+
+        // Handle custom plan selection
+        document.getElementById('rrspMatchingPlan').addEventListener('change', function() {
+            var customSection = document.getElementById('customPlanSection');
+            var customInput = document.getElementById('customPercentage');
+            if (this.value === 'custom') {
+                customSection.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customSection.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('employerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Get submit button and spinner
+            const submitButton = document.getElementById('submitButton');
+            const submitSpinner = document.getElementById('submitSpinner');
+
+            // Disable button and show spinner
+            submitButton.disabled = true;
+            submitButton.value = 'Processing...';
+            submitSpinner.style.display = 'block';
+
+            var rrspValue;
+            // Check if we have a hidden RRSP value (for existing domain matches)
+            const hiddenRrspValue = document.getElementById('hiddenRrspValue');
+            if (hiddenRrspValue) {
+                rrspValue = hiddenRrspValue.value;
+            } else {
+                // Otherwise get it from the select field
+                rrspValue = this.rrspMatchingPlan.value;
+                if (rrspValue === 'custom') {
+                    rrspValue = this.customPercentage.value;
+                }
+            }
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    document.getElementById('result').innerHTML = result;
+                    document.getElementById('employerForm').style.display = 'none';
+                    document.getElementById('submissionConfirmation').style.display = 'block';
+                    
+                    // Reset button and hide spinner
+                    submitButton.disabled = false;
+                    submitButton.value = 'Submit';
+                    submitSpinner.style.display = 'none';
+                })
+                .withFailureHandler(function(error) {
+                    document.getElementById('result').innerHTML = 
+                        '<div class="error">Error submitting form: ' + error + '</div>';
+                    
+                    // Reset button and hide spinner
+                    submitButton.disabled = false;
+                    submitButton.value = 'Submit';
+                    submitSpinner.style.display = 'none';
+                })
+                .processEmployerForm({
+                    formFillerEmail: this.formFillerEmail.value,
+                    formFillerCompany: this.formFillerCompany.value,
+                    filledBefore: 'N/A',
+                    rrspMatchingPlan: rrspValue,
+                    agreeToDefault: this.agreeToDefault ? this.agreeToDefault.checked : false,
+                    employeeName: this.employeeName.value,
+                    employeeEmail: this.employeeEmail.value
+                });
+        });
     </script>
-  </body>
+</body>
 </html>
