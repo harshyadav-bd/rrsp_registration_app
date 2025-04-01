@@ -13,6 +13,36 @@ function doGet(e) {
     .setTitle('RRSP Enrollment - Employer Form');
 }
 
+function checkExistingDomain(email) {
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  // Get domain from email
+  const domain = email.split('@')[1];
+  
+  // Look for matching domain in column A (index 0)
+  for (let i = data.length - 1; i >= 0; i--) {
+    const rowEmail = data[i][0];
+    if (rowEmail && rowEmail.includes('@')) {
+      const rowDomain = rowEmail.split('@')[1];
+      if (rowDomain === domain) {
+        // Return the RRSP matching plan from column D (index 3) and company name from column B (index 1)
+        return {
+          found: true,
+          matchingPlan: data[i][3],
+          companyName: data[i][1]
+        };
+      }
+    }
+  }
+  
+  return {
+    found: false,
+    matchingPlan: null,
+    companyName: null
+  };
+}
+
 function processEmployerForm(formData) {
   const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
   const lastRow = sheet.getLastRow();
@@ -28,6 +58,16 @@ function processEmployerForm(formData) {
     new Date(),
     'Pending'
   ]]);
+
+  // Send notification email to ops
+    const subject = 'New RRSP Registration Submitted';
+    const body = 'Hello,\n\nA new Canada RRSP Registration has been submitted. Please take any action necessary.';
+    
+    MailApp.sendEmail({
+        to: 'ops@hireborderless.com',
+        subject: subject,
+        body: body
+    });
   
   // Create a trigger to send the email after 24 hours
   ScriptApp.newTrigger('sendDelayedEmailToEmployee')
@@ -156,8 +196,19 @@ function processEmployeeForm(formData) {
   
   // Update status in column 9
   sheet.getRange(row + 1, 9).setValue('Completed');
+
+  // Send notification email to ops
+  const subject = 'Employee Completed RRSP Registration';
+  const body = 'Hello,\n\nAn employee has completed their RRSP registration. Please take any action necessary.';
+
+  MailApp.sendEmail({
+    to: 'ops@hireborderless.com',
+    subject: subject,
+    body: body
+  });
   
-  return '<strong>Form submitted successfully. Please <a href="https://www.joinyourplan.com/?id=16742&lang=Eng&t=638410114351592616#outside-front-cover" target="_blank">click here</a> to complete your RRSP registration directly with Canada Life.</strong>';
+  return '<strong>Form submitted successfully. Please <a href="https://www.joinyourplan.com/?id=16742&lang=Eng&t=638791161949179661#outside-front-cover" target="_blank">click here</a> to complete your RRSP registration directly with Canada Life.</strong>';
+
 }
 
 function getRRSPMatchingPlan(email) {
